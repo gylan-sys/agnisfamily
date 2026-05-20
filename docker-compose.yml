@@ -1,0 +1,33 @@
+services:
+  agnisfamily:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: agnisfamily:latest
+    container_name: agnisfamily-app
+    restart: unless-stopped
+    ports:
+      # Maps port 8080 on your host machine to port 3000 in your container
+      # You can change 8080 to any port you like (e.g. 80:3000, 3000:3000)
+      - "8080:3000"
+    environment:
+      # Core Express environment settings
+      - NODE_ENV=production
+      - PORT=3000
+      
+      # [CRITICAL SECURITY] Secret key used for signing JWT login tokens
+      # Change this to a long random secret strings values on your private server!
+      - JWT_SECRET=change-this-to-a-very-secure-random-key-for-your-family-portal-998877
+
+      # [AI COMPANION CONFIG] Insert your Gemini AI API Key here
+      # You can get a free key from Google AI Studio (https://aistudio.google.com)
+      - GEMINI_API_KEY=your_gemini_api_key_goes_here
+
+      # Path to data (corresponds to VOLUME definition in Dockerfile)
+      - DB_PATH=/app/data/family.db
+    volumes:
+      # Persists SQLite database locally on your host machine in `./data/family.db`
+      - ./data:/app/data
+      
+      # Persists family gallery moments (images & videos) locally in `./uploads`
+      - ./uploads:/app/uploads

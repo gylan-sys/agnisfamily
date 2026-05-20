@@ -1,0 +1,6 @@
+{
+  "name": "Agnisfamily",
+  "description": "A polished, full-stack Family/Household Management App for tracking finances, budgets, bills, grocery lists, and shared family moments.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

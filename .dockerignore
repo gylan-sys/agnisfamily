@@ -1,0 +1,10 @@
+node_modules
+dist
+family.db
+uploads
+.git
+.env
+.DS_Store
+.npm
+npm-debug.log
+out
