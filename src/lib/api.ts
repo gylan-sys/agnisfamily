@@ -71,10 +71,54 @@ export const api = {
     getAll: () => fetchWithAuth("/gallery"),
     add: (data: any) => fetchWithAuth("/gallery", { method: "POST", body: JSON.stringify(data) }),
   },
-  upload: (file: File) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    return fetchWithAuth("/upload", { method: "POST", body: formData });
+  upload: (file: File, onProgress?: (percent: number) => void): Promise<{ url: string }> => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      const token = localStorage.getItem("token");
+      
+      xhr.open("POST", `${API_BASE}/upload`);
+      if (token) {
+        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      }
+      
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          onProgress(percent);
+        }
+      };
+      
+      xhr.onload = () => {
+        if (xhr.status === 200 || xhr.status === 201) {
+          try {
+            resolve(JSON.parse(xhr.responseText));
+          } catch (e) {
+            reject(new Error("Invalid response from server"));
+          }
+        } else {
+          if (xhr.status === 401 || xhr.status === 403) {
+            localStorage.removeItem("token");
+            if (!window.location.pathname.startsWith("/auth")) {
+              window.location.href = "/auth";
+            }
+          }
+          try {
+            const err = JSON.parse(xhr.responseText);
+            reject(new Error(err.error || "Upload failed"));
+          } catch (e) {
+            reject(new Error(`Server error: ${xhr.status}`));
+          }
+        }
+      };
+      
+      xhr.onerror = () => {
+        reject(new Error("Network connection failed during upload"));
+      };
+      
+      const formData = new FormData();
+      formData.append("file", file);
+      xhr.send(formData);
+    });
   },
   users: {
     getAll: () => fetchWithAuth("/users"),

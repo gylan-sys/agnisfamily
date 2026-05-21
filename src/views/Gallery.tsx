@@ -11,6 +11,7 @@ export default function Gallery() {
   const [newImage, setNewImage] = useState({ title: "" });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
     loadData();
@@ -32,9 +33,12 @@ export default function Gallery() {
     if (!selectedFile) return;
 
     setIsUploading(true);
+    setUploadProgress(0);
     try {
-      // 1. Upload the file
-      const { url } = await api.upload(selectedFile);
+      // 1. Upload the file with real-time feedback
+      const { url } = await api.upload(selectedFile, (progress) => {
+        setUploadProgress(progress);
+      });
       
       // 2. Add to gallery database
       await api.gallery.add({
@@ -236,16 +240,41 @@ export default function Gallery() {
                 </div>
               </div>
 
+              {isUploading && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  className="space-y-2 mt-4 p-4 bg-rose-50/40 rounded-3xl border border-rose-100/60 overflow-hidden"
+                >
+                  <div className="flex justify-between items-center text-xs font-black text-rose-700">
+                    <span className="flex items-center gap-1.5 uppercase tracking-widest text-[9px]">
+                      <Loader2 size={12} className="animate-spin text-rose-600" />
+                      Uploading Media
+                    </span>
+                    <span className="font-mono text-sm">{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                    <motion.div 
+                      className="bg-gradient-to-r from-rose-500 to-indigo-500 h-full rounded-full shadow-[0_0_8px_rgba(244,63,94,0.35)]"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${uploadProgress}%` }}
+                      transition={{ duration: 0.05 }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Please wait while we secure your wonderful moment.</p>
+                </motion.div>
+              )}
+
               <button
                 type="submit"
                 disabled={!selectedFile || isUploading}
                 className="w-full bg-rose-600 text-white py-5 rounded-2xl font-black text-lg shadow-2xl shadow-rose-100 hover:bg-rose-700 transition-all mt-4 uppercase tracking-[0.2em] flex items-center justify-center disabled:opacity-50 disabled:bg-gray-200"
               >
                 {isUploading ? (
-                  <>
-                    <Loader2 size={24} className="mr-2 animate-spin" />
-                    Saving...
-                  </>
+                  <span className="flex items-center space-x-2">
+                    <Loader2 size={24} className="animate-spin" />
+                    <span>Uploading ({uploadProgress}%)</span>
+                  </span>
                 ) : (
                   "Share Moment"
                 )}

@@ -247,9 +247,21 @@ async function startServer() {
   });
 
   app.delete("/api/transactions/:id", authenticateToken, (req: any, res) => {
-    // Only admin or owner can delete? Let's say all family members can manage for now, or just owner/admin.
-    const result = db.prepare("DELETE FROM transactions WHERE id = ?").run(req.params.id);
-    res.json({ message: "Deleted" });
+    try {
+      const txId = req.params.id;
+      const tx: any = db.prepare("SELECT * FROM transactions WHERE id = ?").get(txId);
+      if (tx && tx.description) {
+        const match = tx.description.match(/\[Bill ID:\s*([0-9]+)\]/);
+        if (match) {
+          const billId = match[1];
+          db.prepare("UPDATE bills SET status = 'unpaid' WHERE id = ?").run(billId);
+        }
+      }
+      db.prepare("DELETE FROM transactions WHERE id = ?").run(txId);
+      res.json({ message: "Deleted" });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
   });
 
   // Budgets
@@ -281,10 +293,41 @@ async function startServer() {
     res.json({ id: result.lastInsertRowid });
   });
 
-  app.patch("/api/bills/:id/status", authenticateToken, (req, res) => {
+  app.patch("/api/bills/:id/status", authenticateToken, (req: any, res) => {
     const { status } = req.body;
-    db.prepare("UPDATE bills SET status = ? WHERE id = ?").run(status, req.params.id);
-    res.json({ message: "Status updated" });
+    const billId = req.params.id;
+
+    try {
+      const updateTransaction = db.transaction(() => {
+        const bill: any = db.prepare("SELECT * FROM bills WHERE id = ?").get(billId);
+        if (!bill) {
+          throw new Error("Bill not found");
+        }
+
+        // Delete any existing transaction for this bill first
+        db.prepare("DELETE FROM transactions WHERE description LIKE ?").run(`%[Bill ID: ${billId}]%`);
+
+        // Update the status on the bill
+        db.prepare("UPDATE bills SET status = ? WHERE id = ?").run(status, billId);
+
+        // If newly marked as paid, create an expense transaction
+        if (status === "paid") {
+          db.prepare(
+            "INSERT INTO transactions (user_id, amount, type, category, date, description) VALUES (?, ?, 'expense', 'Bills', ?, ?)"
+          ).run(
+            req.user.id,
+            bill.amount,
+            new Date().toISOString().split("T")[0],
+            `Pembayaran Tagihan: ${bill.name} [Bill ID: ${billId}]`
+          );
+        }
+      });
+
+      updateTransaction();
+      res.json({ message: "Status updated" });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
   });
 
   // Tasks

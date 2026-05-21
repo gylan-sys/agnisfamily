@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { useLanguage } from "../contexts/LanguageContext";
 import { 
   LayoutDashboard, 
   Wallet, 
@@ -13,7 +14,6 @@ import {
   Menu,
   X,
   Settings as SettingsIcon,
-  Sparkles
 } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
@@ -25,13 +25,13 @@ const navItems = [
   { path: "/planning", label: "Family Planning", icon: ListTodo },
   { path: "/family-hub", label: "Family Hub", icon: MessagesSquare },
   { path: "/gallery", label: "Gallery", icon: Images },
-  { path: "/ai-assistant", label: "AI Assistant", icon: Sparkles },
   { path: "/profile", label: "Profile", icon: UserCircle },
   { path: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
 export default function Layout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -39,6 +39,31 @@ export default function Layout({ children }: { children: ReactNode }) {
   const handleLogout = () => {
     logout();
     navigate("/auth");
+  };
+
+  const getNavLabel = (path: string, defaultLabel: string) => {
+    switch (path) {
+      case "/": return t("nav.dashboard");
+      case "/budgets": return t("nav.budgets");
+      case "/bills": return t("nav.bills");
+      case "/planning": return t("nav.planning");
+      case "/family-hub": return t("nav.familyhub");
+      case "/gallery": return t("nav.gallery");
+      case "/profile": return t("nav.profile");
+      case "/settings": return t("nav.settings");
+      default: return defaultLabel;
+    }
+  };
+
+  const getMobileLabel = (path: string, defaultLabel: string) => {
+    switch (path) {
+      case "/": return t("nav.dashboard");
+      case "/budgets": return t("nav.budgets");
+      case "/planning": return t("nav.planning");
+      case "/family-hub": return t("nav.familyhub");
+      case "/gallery": return t("nav.gallery");
+      default: return defaultLabel;
+    }
   };
 
   const mobileNavItems = [
@@ -68,7 +93,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       <aside className="hidden lg:flex flex-col w-64 bg-white/70 backdrop-blur-md border-r border-gray-200 sticky top-0 h-screen">
         <div className="p-6">
           <h1 className="text-2xl font-bold text-indigo-600 tracking-tight">Agnisfamily</h1>
-          <p className="text-xs text-gray-500 font-mono mt-1">Household Management</p>
+          <p className="text-xs text-gray-500 font-mono mt-1">{t("layout.household")}</p>
         </div>
 
         <nav className="flex-1 px-4 py-2 space-y-1">
@@ -86,7 +111,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 }`}
               >
                 <Icon size={20} className="mr-3" />
-                {item.label}
+                {getNavLabel(item.path, item.label)}
               </Link>
             );
           })}
@@ -111,7 +136,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             className="flex items-center w-full px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors"
           >
             <LogOut size={20} className="mr-3" />
-            Logout
+            {t("nav.logout")}
           </button>
         </div>
       </aside>
@@ -124,7 +149,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold mr-3 shadow-lg shadow-indigo-100 italic">
               A
             </div>
-            <h1 className="text-lg font-black text-gray-900 tracking-tight">{activeNavItem.label}</h1>
+            <h1 className="text-lg font-black text-gray-900 tracking-tight">{getNavLabel(activeNavItem.path, activeNavItem.label)}</h1>
           </div>
           <div className="flex items-center space-x-2">
             <Link to="/profile" className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200">
@@ -176,7 +201,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 <span className={`text-[10px] font-bold mt-1 transition-all ${
                   isActive ? "text-indigo-600 scale-110" : "text-gray-400 opacity-0 group-hover:opacity-100"
                 }`}>
-                  {item.label}
+                  {getMobileLabel(item.path, item.label)}
                 </span>
                 {isActive && (
                   <motion.div 
@@ -227,7 +252,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                       }`}
                     >
                       <Icon size={24} className="mr-4" />
-                      {item.label}
+                      {getNavLabel(item.path, item.label)}
                     </Link>
                   );
                 })}
@@ -238,7 +263,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                   className="flex items-center w-full px-4 py-4 text-lg font-medium text-red-600 bg-red-50 rounded-2xl"
                 >
                   <LogOut size={24} className="mr-4" />
-                  Logout
+                  {t("nav.logout")}
                 </button>
               </div>
             </motion.div>

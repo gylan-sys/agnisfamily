@@ -75,6 +75,9 @@ export default function Budgets() {
           return (
             <motion.div 
               layout
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
               key={b.id}
               className="bg-white p-6 md:p-8 rounded-[32px] md:rounded-[40px] border-2 border-gray-50 shadow-sm md:shadow-xl hover:border-indigo-100 transition-all"
             >
@@ -109,7 +112,8 @@ export default function Budgets() {
                   <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: `${percent}%` }}
-                    className={`h-full rounded-full transition-all duration-1000 ${isOver ? 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]' : 'bg-indigo-600 shadow-[0_0_12px_rgba(79,70,229,0.4)]'}`}
+                    transition={{ type: "spring", stiffness: 60, damping: 15, mass: 0.6 }}
+                    className={`h-full rounded-full ${isOver ? 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]' : 'bg-indigo-600 shadow-[0_0_12px_rgba(79,70,229,0.4)]'}`}
                   />
                 </div>
 

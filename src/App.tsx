@@ -5,6 +5,7 @@
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
 import Layout from "./components/Layout";
 import Dashboard from "./views/Dashboard";
 import Budgets from "./views/Budgets";
@@ -15,7 +16,6 @@ import Gallery from "./views/Gallery";
 import Profile from "./views/Profile";
 import Settings from "./views/Settings";
 import Auth from "./views/Auth";
-import AIAssistant from "./views/AIAssistant";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -38,21 +38,22 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <Router>
-      <AuthProvider>
-        <Routes>
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/budgets" element={<ProtectedRoute><Budgets /></ProtectedRoute>} />
-          <Route path="/bills" element={<ProtectedRoute><Bills /></ProtectedRoute>} />
-          <Route path="/planning" element={<ProtectedRoute><Planning /></ProtectedRoute>} />
-          <Route path="/family-hub" element={<ProtectedRoute><FamilyHub /></ProtectedRoute>} />
-          <Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-          <Route path="/ai-assistant" element={<ProtectedRoute><AIAssistant /></ProtectedRoute>} />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/budgets" element={<ProtectedRoute><Budgets /></ProtectedRoute>} />
+            <Route path="/bills" element={<ProtectedRoute><Bills /></ProtectedRoute>} />
+            <Route path="/planning" element={<ProtectedRoute><Planning /></ProtectedRoute>} />
+            <Route path="/family-hub" element={<ProtectedRoute><FamilyHub /></ProtectedRoute>} />
+            <Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </AuthProvider>
+      </LanguageProvider>
     </Router>
   );
 }

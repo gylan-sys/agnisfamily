@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { api } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
+import { useLanguage } from "../contexts/LanguageContext";
 import { User } from "../types";
 import { 
   Settings as SettingsIcon, 
@@ -12,13 +13,26 @@ import {
   CheckCircle2,
   XCircle,
   Plus,
-  UserPlus
+  UserPlus,
+  Palette,
+  Languages
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
+const BACKGROUND_PRESETS = [
+  { id: "cozy-aura", name: "Aura Glow (Warm)", preview: "bg-gradient-to-tr from-indigo-300 via-purple-200 to-rose-200" },
+  { id: "sunset-minimal", name: "Sunset Calm", preview: "bg-gradient-to-tr from-amber-200 via-rose-200 to-indigo-300" },
+  { id: "forest-calm", name: "Sage Serenity", preview: "bg-gradient-to-tr from-emerald-200 via-teal-200 to-indigo-300" },
+  { id: "deep-nebula", name: "Deep Space (Dark)", preview: "bg-gradient-to-tr from-gray-900 via-slate-800 to-indigo-900" },
+  { id: "vibrant-energy", name: "Vibrant Punch", preview: "bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500" },
+  { id: "minimalist-ivory", name: "Minimalist Ivory", preview: "bg-slate-150 border border-gray-300" },
+];
+
 export default function Settings() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'account' | 'family'>('account');
+  const { t, language, setLanguage } = useLanguage();
+  const [activeTab, setActiveTab] = useState<'account' | 'family' | 'preferences'>('account');
+  const [selectedBg, setSelectedBg] = useState<string>(() => localStorage.getItem("agnisfamily-bg") || "cozy-aura");
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [passwordData, setPasswordData] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
   const [msg, setMsg] = useState({ type: "", text: "" });
@@ -43,15 +57,15 @@ export default function Settings() {
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setMsg({ type: "error", text: "Passwords do not match" });
+      setMsg({ type: "error", text: language === "id" ? "Kata sandi tidak cocok" : "Passwords do not match" });
       return;
     }
     try {
       await api.users.changePassword({ 
-        oldPassword: passwordData.oldPassword, 
-        newPassword: passwordData.newPassword 
+         oldPassword: passwordData.oldPassword, 
+         newPassword: passwordData.newPassword 
       });
-      setMsg({ type: "success", text: "Password updated successfully!" });
+      setMsg({ type: "success", text: language === "id" ? "Kata sandi berhasil disimpan!" : "Password updated successfully!" });
       setPasswordData({ oldPassword: "", newPassword: "", confirmPassword: "" });
       setTimeout(() => setMsg({ type: "", text: "" }), 3000);
     } catch (err: any) {
@@ -63,7 +77,7 @@ export default function Settings() {
     try {
       await api.users.updateRole(userId, newRole);
       loadUsers();
-      setMsg({ type: "success", text: "Role updated" });
+      setMsg({ type: "success", text: language === "id" ? "Role diperbarui" : "Role updated" });
       setTimeout(() => setMsg({ type: "", text: "" }), 3000);
     } catch (err: any) {
       setMsg({ type: "error", text: err.message });
@@ -71,11 +85,14 @@ export default function Settings() {
   };
 
   const deleteUser = async (userId: number) => {
-    if (confirm("Are you sure you want to remove this family member?")) {
+    const confirmMsg = language === "id" 
+      ? "Apakah Anda yakin ingin menghapus anggota keluarga ini?" 
+      : "Are you sure you want to remove this family member?";
+    if (confirm(confirmMsg)) {
       try {
         await api.users.delete(userId);
         loadUsers();
-        setMsg({ type: "success", text: "User removed" });
+        setMsg({ type: "success", text: language === "id" ? "Anggota dihapus" : "User removed" });
         setTimeout(() => setMsg({ type: "", text: "" }), 3000);
       } catch (err: any) {
         setMsg({ type: "error", text: err.message });
@@ -87,7 +104,7 @@ export default function Settings() {
     e.preventDefault();
     try {
       await api.users.create(newUser);
-      setMsg({ type: "success", text: "New family member added!" });
+      setMsg({ type: "success", text: language === "id" ? "Anggota keluarga baru ditambahkan!" : "New family member added!" });
       setShowAddModal(false);
       setNewUser({ name: "", email: "", password: "", role: "member" });
       loadUsers();
@@ -98,15 +115,16 @@ export default function Settings() {
   };
 
   const tabs = [
-    { id: 'account', label: 'Account Security', icon: Lock },
-    ...(user?.role === 'admin' ? [{ id: 'family', label: 'Family Management', icon: Users }] : []),
+    { id: 'account', label: t("settings.tab.account"), icon: Lock },
+    { id: 'preferences', label: t("settings.tab.preferences"), icon: Palette },
+    ...(user?.role === 'admin' ? [{ id: 'family', label: t("settings.tab.family"), icon: Users }] : []),
   ];
 
   return (
     <div className="pb-16 lg:pb-0 space-y-6 md:space-y-8">
       <header className="px-2">
-        <h2 className="text-3xl md:text-4xl font-black tracking-tight text-gray-900 leading-none">Settings</h2>
-        <p className="text-gray-400 mt-1 text-xs md:text-sm font-medium">Manage your private digital household space.</p>
+        <h2 className="text-3xl md:text-4xl font-black tracking-tight text-gray-900 leading-none">{t("settings.title")}</h2>
+        <p className="text-gray-400 mt-1 text-xs md:text-sm font-medium">{t("settings.subtitle")}</p>
       </header>
 
       <div className="bg-white md:bg-white/80 md:backdrop-blur-xl rounded-[40px] border-0 md:border md:border-gray-100 shadow-none md:shadow-2xl overflow-hidden min-h-[500px] flex flex-col">
@@ -150,14 +168,14 @@ export default function Settings() {
               {activeTab === 'account' ? (
                 <div className="max-w-xl">
                   <div className="mb-8 md:mb-10">
-                    <h3 className="text-xl md:text-2xl font-black text-gray-900 mb-2">Account Security</h3>
-                    <p className="text-gray-400 text-xs md:text-sm font-medium">Update your credentials to keep your family space secure.</p>
+                    <h3 className="text-xl md:text-2xl font-black text-gray-900 mb-2">{t("settings.security.title")}</h3>
+                    <p className="text-gray-400 text-xs md:text-sm font-medium">{t("settings.security.subtitle")}</p>
                   </div>
 
                   <form onSubmit={handlePasswordChange} className="space-y-6">
                     <div className="space-y-6">
                       <div>
-                        <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 px-1">Current Password</label>
+                        <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 px-1">{t("settings.security.old_pass")}</label>
                         <input
                           required
                           type="password"
@@ -168,7 +186,7 @@ export default function Settings() {
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 px-1">New Password</label>
+                          <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 px-1">{t("settings.security.new_pass")}</label>
                           <input
                             required
                             type="password"
@@ -178,7 +196,7 @@ export default function Settings() {
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 px-1">Confirm</label>
+                          <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 px-1">{t("settings.security.confirm_pass")}</label>
                           <input
                             required
                             type="password"
@@ -195,24 +213,136 @@ export default function Settings() {
                         type="submit"
                         className="w-full md:w-auto bg-indigo-600 text-white font-black py-5 md:py-4 px-10 rounded-2xl shadow-2xl shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all text-xs uppercase tracking-widest"
                       >
-                        Update Credentials
+                        {t("settings.security.submit")}
                       </button>
                     </div>
                   </form>
+                </div>
+              ) : activeTab === 'preferences' ? (
+                <div className="max-w-2xl space-y-10">
+                  {/* Language Selection Section */}
+                  <div className="border-b border-gray-100 pb-10">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+                        <Languages size={20} />
+                      </div>
+                      <div>
+                        <h3 className="text-lg md:text-xl font-black text-gray-900">{t("settings.pref.lang_title")}</h3>
+                        <p className="text-gray-400 text-xs md:text-sm font-medium">{t("settings.pref.lang_subtitle")}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Indonesian Switch */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLanguage("id");
+                          setMsg({ type: "success", text: "Bahasa Indonesia berhasil diterapkan!" });
+                          setTimeout(() => setMsg({ type: "", text: "" }), 3000);
+                        }}
+                        className={`p-5 rounded-3xl border-2 text-left transition-all flex items-center justify-between border-solid ${
+                          language === "id" 
+                            ? "border-indigo-600 bg-indigo-50/20" 
+                            : "border-gray-100 hover:border-gray-200 bg-white"
+                        }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <span className="text-3xl select-none" role="img" aria-label="ID Flag">🇮🇩</span>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-black text-gray-900 uppercase">Bahasa Indonesia</span>
+                            <span className="text-[10px] text-gray-400 font-bold">Default</span>
+                          </div>
+                        </div>
+                        {language === "id" && (
+                          <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center">
+                            <div className="w-2.5 h-2.5 rounded-full bg-white" />
+                          </div>
+                        )}
+                      </button>
+
+                      {/* English Switch */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLanguage("en");
+                          setMsg({ type: "success", text: "English language successfully applied!" });
+                          setTimeout(() => setMsg({ type: "", text: "" }), 3000);
+                        }}
+                        className={`p-5 rounded-3xl border-2 text-left transition-all flex items-center justify-between border-solid ${
+                          language === "en" 
+                            ? "border-indigo-600 bg-indigo-50/20" 
+                            : "border-gray-100 hover:border-gray-200 bg-white"
+                        }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <span className="text-3xl select-none" role="img" aria-label="UK Flag">🇬🇧</span>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-black text-gray-900 uppercase">English</span>
+                            <span className="text-[10px] text-gray-400 font-bold">Sleek UK</span>
+                          </div>
+                        </div>
+                        {language === "en" && (
+                          <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center">
+                            <div className="w-2.5 h-2.5 rounded-full bg-white" />
+                          </div>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-6">
+                      <h3 className="text-lg md:text-xl font-black text-gray-900 mb-1">{t("settings.pref.bg_title")}</h3>
+                      <p className="text-gray-400 text-xs md:text-sm font-medium">{t("settings.pref.subtitle")}</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {BACKGROUND_PRESETS.map((preset) => {
+                        const isSelected = selectedBg === preset.id;
+                        return (
+                          <button
+                            key={preset.id}
+                            onClick={() => {
+                              setSelectedBg(preset.id);
+                              localStorage.setItem("agnisfamily-bg", preset.id);
+                              setMsg({ type: "success", text: language === "id" ? `${preset.name} diterapkan!` : `${preset.name} background applied!` });
+                              setTimeout(() => setMsg({ type: "", text: "" }), 3000);
+                            }}
+                            className={`p-4 rounded-3xl border-2 text-left transition-all relative flex flex-col justify-between h-36 border-solid ${
+                              isSelected ? "border-indigo-600 bg-indigo-50/20" : "border-gray-100 hover:border-gray-200 bg-white"
+                            }`}
+                          >
+                            <div className={`w-full h-16 rounded-2xl ${preset.preview}`} />
+                            <div className="mt-3 flex items-center justify-between">
+                              <span className="text-xs font-black text-gray-800 truncate uppercase tracking-tighter italic mr-1">
+                                {preset.name}
+                              </span>
+                              {isSelected && (
+                                <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                                  <div className="w-2 h-2 rounded-full bg-white" />
+                                </div>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-8">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="text-xl md:text-2xl font-black text-gray-900 mb-1">Family Circle</h3>
-                      <p className="text-gray-400 text-xs md:text-sm font-medium">Manage members and their roles.</p>
+                      <h3 className="text-xl md:text-2xl font-black text-gray-900 mb-1">{t("settings.family.title")}</h3>
+                      <p className="text-gray-400 text-xs md:text-sm font-medium">{t("settings.family.subtitle")}</p>
                     </div>
                     <button
                       onClick={() => setShowAddModal(true)}
                       className="hidden md:flex bg-indigo-600 text-white px-8 py-4 rounded-2xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 items-center font-black text-xs uppercase tracking-widest"
                     >
                       <UserPlus size={18} className="mr-2" />
-                      Add Member
+                      {t("settings.family.add")}
                     </button>
                   </div>
 
@@ -221,10 +351,10 @@ export default function Settings() {
                     <table className="w-full">
                       <thead>
                         <tr className="bg-gray-50/50 text-left text-[10px] font-black text-gray-300 uppercase tracking-[0.3em] border-b border-gray-50">
-                          <th className="py-6 px-10">Name</th>
-                          <th className="py-6 px-10">Account</th>
-                          <th className="py-6 px-10">Permission Role</th>
-                          <th className="py-6 px-10 text-right">Actions</th>
+                          <th className="py-6 px-10">{t("settings.family.table.name")}</th>
+                          <th className="py-6 px-10">{t("settings.family.table.account")}</th>
+                          <th className="py-6 px-10">{t("settings.family.table.role")}</th>
+                          <th className="py-6 px-10 text-right">{t("settings.family.table.actions")}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-50">
@@ -348,14 +478,14 @@ export default function Settings() {
                   <Plus size={24} className="rotate-45" />
                 </button>
                 <div className="mb-8">
-                  <h3 className="text-2xl font-black text-gray-900 mb-1">Add Family</h3>
-                  <p className="text-gray-400 text-sm font-medium">Invite a member to your household.</p>
+                  <h3 className="text-2xl font-black text-gray-900 mb-1">{t("settings.family.modal.title")}</h3>
+                  <p className="text-gray-400 text-sm font-medium">{t("settings.family.modal.subtitle")}</p>
                 </div>
                 
                 <form onSubmit={handleAddUser} className="space-y-6">
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 px-1">Name</label>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 px-1">{t("settings.family.table.name")}</label>
                       <input
                         required
                         type="text"
@@ -367,7 +497,7 @@ export default function Settings() {
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 px-1">Email</label>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 px-1">{t("settings.family.table.account")}</label>
                       <input
                         required
                         type="email"
@@ -408,7 +538,7 @@ export default function Settings() {
                     type="submit"
                     className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black text-lg shadow-2xl shadow-indigo-100 hover:bg-indigo-700 transition-all mt-4 uppercase tracking-[0.15em]"
                   >
-                    Add Member
+                    {t("settings.family.modal.submit")}
                   </button>
                 </form>
               </motion.div>

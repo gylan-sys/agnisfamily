@@ -190,42 +190,75 @@ export default function Planning() {
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-4 pr-1 custom-scrollbar">
-            {[...tasks].sort((a, b) => {
-              if (taskSort === 'none') return 0;
-              
-              const dateA = a.due_date ? new Date(a.due_date).getTime() : (taskSort === 'asc' ? Infinity : -Infinity);
-              const dateB = b.due_date ? new Date(b.due_date).getTime() : (taskSort === 'asc' ? Infinity : -Infinity);
+            <AnimatePresence initial={false}>
+              {[...tasks].sort((a, b) => {
+                if (taskSort === 'none') return 0;
+                
+                const dateA = a.due_date ? new Date(a.due_date).getTime() : (taskSort === 'asc' ? Infinity : -Infinity);
+                const dateB = b.due_date ? new Date(b.due_date).getTime() : (taskSort === 'asc' ? Infinity : -Infinity);
 
-              if (taskSort === 'asc') return dateA - dateB;
-              return dateB - dateA;
-            }).map((task) => (
-              <div key={task.id} className="bg-white border-2 border-gray-50 p-6 rounded-[32px] hover:border-indigo-100 transition-colors shadow-sm">
-                <div className="flex justify-between items-start mb-3">
-                  <h4 className={`text-base font-black uppercase tracking-tight ${task.status === 'completed' ? 'text-gray-300 line-through' : 'text-gray-900'}`}>
-                    {task.title}
-                  </h4>
-                  <select 
-                    value={task.status}
-                    onChange={(e) => updateTaskStatus(task.id, e.target.value)}
-                    className="text-[9px] font-black uppercase tracking-wider py-1.5 px-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 cursor-pointer"
-                  >
-                    <option value="pending">Wait</option>
-                    <option value="in-progress">Busy</option>
-                    <option value="completed">Done</option>
-                  </select>
-                </div>
-                <p className="text-xs text-gray-400 font-medium mb-5 line-clamp-2 leading-relaxed">{task.description}</p>
-                <div className="flex justify-between items-center bg-gray-50 p-1 rounded-2xl">
-                  <div className="flex items-center text-[10px] font-bold text-gray-400 px-3">
-                    <Calendar size={12} className="mr-2" />
-                    {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No Deadline'}
+                if (taskSort === 'asc') return dateA - dateB;
+                return dateB - dateA;
+              }).map((task) => (
+                <motion.div 
+                  layout
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ 
+                    opacity: task.status === 'completed' ? 0.65 : 1,
+                    scale: task.status === 'completed' ? 0.98 : 1,
+                    borderColor: task.status === 'completed' ? '#f1f5f9' : '#f9fafb'
+                  }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                  key={task.id} 
+                  className={`bg-white border-2 p-6 rounded-[32px] hover:border-indigo-100 transition-colors shadow-sm relative overflow-hidden`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="relative flex items-center gap-2 min-w-0 flex-1 mr-4">
+                      {task.status === 'completed' && (
+                        <motion.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                        >
+                          <CheckCircle2 size={16} className="text-emerald-500 flex-shrink-0" />
+                        </motion.div>
+                      )}
+                      <div className="relative min-w-0 flex-1">
+                        <h4 className={`text-base font-black uppercase tracking-tight transition-all duration-300 ${task.status === 'completed' ? 'text-gray-300' : 'text-gray-900'}`}>
+                          {task.title}
+                        </h4>
+                        <motion.div
+                          initial={{ width: "0%" }}
+                          animate={{ width: task.status === 'completed' ? "100%" : "0%" }}
+                          transition={{ duration: 0.35, ease: "easeInOut" }}
+                          className="absolute left-0 top-1/2 -translate-y-1/2 h-[2px] bg-indigo-500/40 pointer-events-none"
+                        />
+                      </div>
+                    </div>
+                    <select 
+                      value={task.status}
+                      onChange={(e) => updateTaskStatus(task.id, e.target.value)}
+                      className="text-[9px] font-black uppercase tracking-wider py-1.5 px-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                    >
+                      <option value="pending">Wait</option>
+                      <option value="in-progress">Busy</option>
+                      <option value="completed">Done</option>
+                    </select>
                   </div>
-                  <div className="flex items-center bg-white text-indigo-600 px-4 py-2 rounded-xl font-black text-[10px] shadow-sm uppercase italic">
-                    {task.assigned_name || 'Family'}
+                  <p className="text-xs text-gray-400 font-medium mb-5 line-clamp-2 leading-relaxed">{task.description}</p>
+                  <div className="flex justify-between items-center bg-gray-50 p-1 rounded-2xl">
+                    <div className="flex items-center text-[10px] font-bold text-gray-400 px-3">
+                      <Calendar size={12} className="mr-2" />
+                      {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No Deadline'}
+                    </div>
+                    <div className="flex items-center bg-white text-indigo-600 px-4 py-2 rounded-xl font-black text-[10px] shadow-sm uppercase italic">
+                      {task.assigned_name || 'Family'}
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                </motion.div>
+              ))}
+            </AnimatePresence>
             {tasks.length === 0 && (
               <div className="py-20 text-center text-gray-300">
                 <p className="font-bold uppercase tracking-widest text-xs">All clear!</p>
